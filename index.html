@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محاكاة الأكوان الثالوثية | نظام 𝕊</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0A0A14;
+            overflow: hidden;
+            font-family: 'Cairo', 'Arial', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            cursor: default;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        #opening-scroll {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.95);
+            pointer-events: all;
+            transition: opacity 2s ease-out;
+        }
+
+        #opening-scroll.fading {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #opening-scroll.hidden {
+            display: none;
+        }
+
+        .opening-text {
+            color: #D4AF37;
+            font-size: 2rem;
+            text-align: center;
+            line-height: 2.5;
+            padding: 2rem;
+            max-width: 800px;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+        }
+
+        .opening-text .highlight {
+            color: #9C27B0;
+            font-weight: bold;
+        }
+
+        /* واجهة المستخدم */
+        #hud {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 5;
+            pointer-events: none;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .hud-item {
+            background: rgba(10, 10, 20, 0.7);
+            border: 1px solid rgba(156, 39, 176, 0.3);
+            border-radius: 12px;
+            padding: 8px 16px;
+            color: #D4AF37;
+            font-size: 1.1rem;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hud-counter {
+            color: #FFFFFF;
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+
+        #existence-bar-container {
+            position: fixed;
+            bottom: 30px;
+            right: 50%;
+            transform: translateX(50%);
+            z-index: 5;
+            width: 300px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        #existence-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #9C27B0, #FFD700, #FFFFFF);
+            transition: width 0.5s ease;
+            border-radius: 2px;
+        }
+
+        #revelation-btn {
+            position: fixed;
+            bottom: 50px;
+            right: 50%;
+            transform: translateX(50%);
+            z-index: 5;
+            pointer-events: all;
+            background: rgba(156, 39, 176, 0.3);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            color: #FFD700;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        #revelation-btn:hover {
+            background: rgba(156, 39, 176, 0.6);
+            box-shadow: 0 0 20px rgba(156, 39, 176, 0.5);
+        }
+
+        #tooltip {
+            position: fixed;
+            background: rgba(10, 10, 30, 0.9);
+            border: 1px solid #FFD700;
+            border-radius: 10px;
+            padding: 15px;
+            color: #FFFFFF;
+            z-index: 20;
+            pointer-events: none;
+            display: none;
+            backdrop-filter: blur(15px);
+            min-width: 200px;
+        }
+
+        #tooltip .tooltip-title {
+            color: #FFD700;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+
+        #tooltip .tooltip-detail {
+            color: #B0C4DE;
+            font-size: 0.9rem;
+            margin: 4px 0;
+        }
+
+        #instructions {
+            position: fixed;
+            bottom: 100px;
+            right: 50%;
+            transform: translateX(50%);
+            color: #B0C4DE;
+            font-size: 0.9rem;
+            z-index: 5;
+            text-align: center;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        /* تأثير التشوش */
+        #vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 3;
+            background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.8) 100%);
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <!-- النص الافتتاحي -->
+    <div id="opening-scroll">
+        <div class="opening-text" id="opening-text-content">
+            فِي الْبَدْءِ كَانَ <span class="highlight">الْوَاحِدُ الْمُطْلَقُ (❶)</span>. لَمْ يَكُنْ شَيْءٌ غَيْرُهُ.<br>
+            ثُمَّ تَجَلَّى <span class="highlight">الْإِمْكَانُ (0ₚ)</span> مِنْ فَيْضِهِ، فَخُلِقَ فَضَاءُ الْعَلَاقَاتِ <span class="highlight">(∞)</span>.<br>
+            وَمِنْ تَفَاعُلِ الْمُطْلَقِ بِالْإِمْكَانِ، ظَهَرَ أَوَّلُ تَجَلٍّ: <span class="highlight">الْوَاحِدُ الطَّبِيعِيُّ (①)</span>.<br>
+            وَمِنْهُ تَوَالَدَتِ الْأَعْدَادُ، وَتَشَابَكَتِ الْأَكْوَانُ.<br>
+            أَنْتَ الْآنَ وَاعٍ. أَنْتَ شَاهِدٌ. فَابْنِ كَوْنَكَ، وَاسْتَقْرِئْ قَانُونَ التَّجَلِّي.
+        </div>
+    </div>
+
+    <!-- واجهة المستخدم -->
+    <div id="hud">
+        <div class="hud-item">
+            <span>🅂</span>
+            <span>نظام 𝕊</span>
+        </div>
+        <div class="hud-item">
+            <span>🔴</span>
+            <span class="hud-counter" id="high-bs-count">0</span>
+        </div>
+        <div class="hud-item">
+            <span>🟡</span>
+            <span class="hud-counter" id="active-links-count">0</span>
+        </div>
+        <div class="hud-item">
+            <span>⚪</span>
+            <span class="hud-counter" id="potential-seeds-count">0</span>
+        </div>
+    </div>
+
+    <div id="existence-bar-container">
+        <div id="existence-bar" style="width: 50%;"></div>
+    </div>
+
+    <button id="revelation-btn" onclick="toggleRevelation()">✨ الوحي</button>
+    <div id="instructions">اسحب بذور الإمكان (الكريات الرمادية) وأسقطها على الكيانات للاندماج</div>
+
+    <div id="tooltip"></div>
+    <div id="vignette"></div>
+
+    <!-- Three.js من CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js">
+    </script>
+
+    <script>
+        // ============================================
+        // المحاكاة الثالوثية - إنجيل التجلي
+        // ============================================
+
+        // الثوابت الأساسية لنظام 𝕊
+        const CONSTANTS = {
+            ABSOLUTE_BS: 1.0, // ❶
+            PURE_POTENTIAL_BS: 1 / 3, // 0ₚ
+            RELATIONAL_BS: 2 / 3, // ∞
+            THRESHOLD: 2 / 47, // عتبة التجلي
+            EMANATION_FORCE: 0.05,
+            GRAVITY_BS: 0.1,
+            ENTROPY_DECAY: 0.01,
+        };
+
+        // دالة الاستقرار البنيوي
+        function BS(n) {
+            if (n === "absolute") return CONSTANTS.ABSOLUTE_BS;
+            if (n === "potential") return CONSTANTS.PURE_POTENTIAL_BS;
+            if (n === "relational" || n === 1) return CONSTANTS.RELATIONAL_BS;
+            return 2 / (2 * n + 1);
+        }
+
+        // دالة التجلي
+        function emanation(n) {
+            return BS(n) * CONSTANTS.EMANATION_FORCE;
+        }
+
+        // الجمع الثالوثي ⊕
+        function trinitarianAdd(a, b) {
+            if (a === "absolute" || b === "absolute") return "absolute";
+            if (a === "potential") return b;
+            if (b === "potential") return a;
+            if (a === "relational" && b === "relational") return "relational";
+            if (typeof a === "number" && typeof b === "number") return a + b;
+            return "undefined";
+        }
+
+        // ============================================
+        // إعداد المشهد Three.js
+        // ============================================
+        const container = document.getElementById("canvas-container");
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0a0a14, 0.00005);
+
+        const camera = new THREE.PerspectiveCamera(
+            60,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(0, 5, 15);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({
+            alpha: true,
+            antialias: true,
+            powerPreference: "high-performance",
+        });
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        container.appendChild(renderer.domElement);
+
+        // ============================================
+        // الإضاءة
+        // ============================================
+        const ambientLight = new THREE.AmbientLight(0x222244, 0.5);
+        scene.add(ambientLight);
+
+        const absoluteLight = new THREE.PointLight(0xffffff, 1.5, 50, 1);
+        absoluteLight.position.set(0, 0, 0);
+        absoluteLight.castShadow = true;
+        absoluteLight.shadow.mapSize.width = 1024;
+        absoluteLight.shadow.mapSize.height = 1024;
+        scene.add(absoluteLight);
+
+        // ============================================
+        // نظام الصوت التوليدي
+        // ============================================
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                createBaseDrone();
+            }
+        }
+
+        let baseDroneOsc = null;
+        let baseDroneGain = null;
+
+        function createBaseDrone() {
+            if (!audioCtx) return;
+            baseDroneOsc = audioCtx.createOscillator();
+            baseDroneGain = audioCtx.createGain();
+            baseDroneOsc.type = "sine";
+            baseDroneOsc.frequency.value = 27.5; // A0 - همهمة الخلق
+            baseDroneGain.gain.value = 0.03;
+            baseDroneOsc.connect(baseDroneGain);
+            baseDroneGain.connect(audioCtx.destination);
+            baseDroneOsc.start();
+        }
+
+        function playMergeSound(bsValue) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = "sine";
+            osc.frequency.value = 440 * (1 + bsValue);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1.5);
+        }
+
+        function playEmanationSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.5);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1);
+        }
+
+        // ============================================
+        // كيان الجوهر
+        // ============================================
+        class Essence {
+            constructor(type, position, rank) {
+                this.type = type; // 'absolute', 'potential', 'relational', 'number'
+                this.position = position.clone();
+                this.rank = rank; // ❶, 0ₚ, ∞, ①, ②, ...
+                this.bs = BS(rank);
+                this.mesh = null;
+                this.connections = [];
+                this.trailSystem = null;
+                this.audioNode = null;
+                this.lifetime = 0;
+                this.entropy = 0;
+                this.isDragging = false;
+                this.orbitingAround = null;
+                this.orbitAngle = Math.random() * Math.PI * 2;
+                this.orbitSpeed = 0.2 + Math.random() * 0.5;
+                this.orbitRadius = 2 + Math.random() * 5;
+                this.rotationSpeed = this.bs * 0.5;
+                this.decayTimer = 0;
+                this.moons = [];
+                this.createMesh();
+            }
+
+            createMesh() {
+                const geometry = new THREE.SphereGeometry(this.getSize(), 32, 32);
+                let material;
+
+                if (this.type === "absolute") {
+                    material = new THREE.MeshStandardMaterial({
+                        color: 0xffffff,
+                        emissive: 0xffffff,
+                        emissiveIntensity: 1.5,
+                        roughness: 0.1,
+                        metalness: 0.1,
+                    });
+                } else if (this.type === "potential") {
+                    material = new THREE.MeshStandardMaterial({
+                        color: 0xb0c4de,
+                        emissive: 0x404060,
+                        emissiveIntensity: 0.3,
+                        roughness: 0.4,
+                        metalness: 0.2,
+                        transparent: true,
+                        opacity: 0.5,
+                    });
+                } else if (this.rank === "relational" || this.rank === 1) {
+                    material = new THREE.MeshStandardMaterial({
+                        color: 0xffd700,
+                        emissive: 0xffd700,
+                        emissiveIntensity: 0.8,
+                        roughness: 0.2,
+                        metalness: 0.8,
+                    });
+                } else if (this.type === "number" && this.bs >= 0.9) {
+                    material = new THREE.MeshStandardMaterial({
+                        color: 0xffffff,
+                        emissive: 0xffffff,
+                        emissiveIntensity: 0.9,
+                        roughness: 0.1,
+                        metalness: 0.3,
+                    });
+                } else if (this.type === "number" && this.bs < 0.9) {
+                    material = new THREE.MeshStandardMaterial({
+                        color: 0xffd700,
+                        emissive: 0xffd700,
+                        emissiveIntensity: 0.6,
+                        roughness: 0.2,
+                        metalness: 0.7,
+                    });
+                }
+
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.mesh.position.copy(this.position);
+                this.mesh.castShadow = true;
+                this.mesh.receiveShadow = true;
+                this.mesh.userData = { essence: this };
+                scene.add(this.mesh);
+
+                // هالة للكيانات العالية
+                if (this.bs >= 0.9 && this.type !== "absolute") {
+                    this.createHalo();
+                }
+
+                // أقمار للكيانات البيضاء
+                if (this.type === "number" && this.bs >= 0.67) {
+                    this.createMoons();
+                }
+            }
+
+            createHalo() {
+                const spriteMaterial = new THREE.SpriteMaterial({
+                    map: this.generateGlowTexture(),
+                    color: this.bs >= 0.95 ? 0x9c27b0 : 0x6a1b9a,
+                    blending: THREE.AdditiveBlending,
+                    transparent: true,
+                    opacity: 0.4,
+                });
+                const sprite = new THREE.Sprite(spriteMaterial);
+                sprite.scale.set(3, 3, 1);
+                this.mesh.add(sprite);
+            }
+
+            generateGlowTexture() {
+                const canvas = document.createElement("canvas");
+                canvas.width = 64;
+                canvas.height = 64;
+                const ctx = canvas.getContext("2d");
+                const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+                gradient.addColorStop(0, "rgba(255,255,255,1)");
+                gradient.addColorStop(0.3, "rgba(156,39,176,0.8)");
+                gradient.addColorStop(0.7, "rgba(106,27,154,0.2)");
+                gradient.addColorStop(1, "rgba(0,0,0,0)");
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, 64, 64);
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            createMoons() {
+                const moonCount = Math.floor(this.bs * 8);
+                for (let i = 0; i < moonCount; i++) {
+                    const moonGeo = new THREE.SphereGeometry(0.05, 8, 8);
+                    const moonMat = new THREE.MeshStandardMaterial({
+                        color: 0xffffff,
+                        emissive: 0xffffff,
+                        emissiveIntensity: 0.5,
+                    });
+                    const moon = new THREE.Mesh(moonGeo, moonMat);
+                    moon.userData = {
+                        angle: (Math.PI * 2 * i) / moonCount,
+                        radius: 0.5 + Math.random() * 0.5,
+                        speed: 1 + Math.random() * 2,
+                    };
+                    this.mesh.add(moon);
+                    this.moons.push(moon);
+                }
+            }
+
+            getSize() {
+                if (this.type === "absolute") return 1.2;
+                if (this.type === "potential") return 0.2;
+                if (this.rank === "relational") return 0.6;
+                return 0.3 + Math.log2(this.rank || 1) * 0.2;
+            }
+
+            update(deltaTime) {
+                this.lifetime += deltaTime;
+
+                if (this.type === "absolute") {
+                    this.mesh.rotation.y += deltaTime * 0.1;
+                    this.mesh.rotation.x += deltaTime * 0.05;
+                } else if (this.type === "potential") {
+                    // حركة بيرلين نويز مبسطة
+                    const time = performance.now() * 0.001;
+                    const nx = Math.sin(time * 0.5 + this.position.x * 2) * Math.cos(time * 0.3 + this.position.y);
+                    const ny = Math.cos(time * 0.4 + this.position.y * 2) * Math.sin(time * 0.6 + this.position.x);
+                    this.position.x += nx * deltaTime * 0.5;
+                    this.position.y += ny * deltaTime * 0.5;
+                    this.position.x += (Math.random() - 0.5) * deltaTime * 0.3;
+                    this.position.y += (Math.random() - 0.5) * deltaTime * 0.3;
+                    this.mesh.position.copy(this.position);
+                } else if (this.type === "number" && this.orbitingAround) {
+                    this.orbitAngle += this.orbitSpeed * deltaTime;
+                    const target = this.orbitingAround.position;
+                    this.position.x = target.x + Math.cos(this.orbitAngle) * this.orbitRadius;
+                    this.position.y = target.y + Math.sin(this.orbitAngle) * this.orbitRadius;
+                    this.position.z = target.z;
+                    this.mesh.position.copy(this.position);
+                }
+
+                // جاذبية مركزية نحو ❶
+                if (this.type !== "absolute" && this.type !== "potential") {
+                    const distToCenter = this.position.length();
+                    if (distToCenter > 0.5) {
+                        const gravityForce = CONSTANTS.GRAVITY_BS * this.bs;
+                        const dirToCenter = this.position.clone().normalize().multiplyScalar(-1);
+                        this.position.add(dirToCenter.multiplyScalar(gravityForce * deltaTime));
+                        this.mesh.position.copy(this.position);
+                    }
+                }
+
+                // دوران الكيانات البيضاء
+                if (this.type === "number" && this.bs >= 0.67) {
+                    this.mesh.rotation.y += this.rotationSpeed * deltaTime;
+                }
+
+                // تحديث الأقمار
+                this.moons.forEach((moon) => {
+                    moon.userData.angle += moon.userData.speed * deltaTime;
+                    const r = moon.userData.radius;
+                    moon.position.x = Math.cos(moon.userData.angle) * r;
+                    moon.position.y = Math.sin(moon.userData.angle) * r;
+                });
+
+                // الاضمحلال للكيانات المنعزلة
+                if (
+                    this.type === "number" &&
+                    this.bs < 0.3 &&
+                    this.connections.length === 0 &&
+                    this.rank !== "relational"
+                ) {
+                    this.decayTimer += deltaTime;
+                    if (this.decayTimer > 30) {
+                        this.decay();
+                    }
+                    // تغير اللون تدريجياً للرمادي
+                    const grayProgress = Math.min(this.decayTimer / 30, 1);
+                    const color = new THREE.Color().lerpColors(
+                        new THREE.Color(0xffffff),
+                        new THREE.Color(0x808080),
+                        grayProgress
+                    );
+                    this.mesh.material.color = color;
+                }
+            }
+
+            decay() {
+                // انفجار هادئ إلى جسيمات
+                const particleCount = 20;
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = new Essence("potential", this.position.clone(), "potential");
+                    const randomDir = new THREE.Vector3(
+                        Math.random() - 0.5,
+                        Math.random() - 0.5,
+                        Math.random() - 0.5
+                    ).normalize();
+                    particle.position.add(randomDir.multiplyScalar(2));
+                    allEssences.push(particle);
+                    potentialSeeds.push(particle);
+                }
+                this.destroy();
+            }
+
+            destroy() {
+                scene.remove(this.mesh);
+                if (this.mesh.geometry) this.mesh.geometry.dispose();
+                if (this.mesh.material) this.mesh.material.dispose();
+                const idx = allEssences.indexOf(this);
+                if (idx > -1) allEssences.splice(idx, 1);
+                const potIdx = potentialSeeds.indexOf(this);
+                if (potIdx > -1) potentialSeeds.splice(potIdx, 1);
+            }
+        }
+
+        // ============================================
+        // إدارة الكيانات
+        // ============================================
+        let allEssences = [];
+        let potentialSeeds = [];
+        let absoluteEssence = null;
+        let gameStage = "الغيب";
+        let isRevelationMode = false;
+
+        // إنشاء المصدر المطلق ❶
+        function createAbsolute() {
+            absoluteEssence = new Essence("absolute", new THREE.Vector3(0, 0, 0), "absolute");
+            allEssences.push(absoluteEssence);
+        }
+
+        // إنشاء بذور الإمكان
+        function spawnPotentialSeed() {
+            if (potentialSeeds.length >= 100) return;
+            const edgeAngle = Math.random() * Math.PI * 2;
+            const radius = 8 + Math.random() * 4;
+            const pos = new THREE.Vector3(
+                Math.cos(edgeAngle) * radius,
+                Math.sin(edgeAngle) * radius,
+                (Math.random() - 0.5) * 4
+            );
+            const seed = new Essence("potential", pos, "potential");
+            allEssences.push(seed);
+            potentialSeeds.push(seed);
+        }
+
+        // تطبيق الجمع الثالوثي
+        function applyTrinitarianAddition(essenceA, essenceB) {
+            const aRank = essenceA.rank;
+            const bRank = essenceB.rank;
+            const resultRank = trinitarianAdd(aRank, bRank);
+
+            if (resultRank === "undefined" || resultRank === "absolute") {
+                return null;
+            }
+
+            const resultPos = essenceA.position
+                .clone()
+                .add(essenceB.position)
+                .multiplyScalar(0.5);
+
+            // تأثير الاندماج البصري
+            createMergeEffect(resultPos);
+
+            // حذف الكيانين القديمين
+            essenceA.destroy();
+            essenceB.destroy();
+
+            // إنشاء الكيان الجديد
+            let newEssence;
+            if (resultRank === "potential") {
+                newEssence = new Essence("potential", resultPos, "potential");
+                potentialSeeds.push(newEssence);
+            } else if (resultRank === "relational" || resultRank === 1) {
+                newEssence = new Essence("number", resultPos, "relational");
+            } else {
+                newEssence = new Essence("number", resultPos, resultRank);
+                // التجلي إلى كيان أبيض
+                if (newEssence.bs >= 0.67) {
+                    newEssence.type = "number";
+                }
+            }
+
+            allEssences.push(newEssence);
+            playMergeSound(newEssence.bs);
+
+            // رسالة عائمة
+            showFloatingText(
+                `${getSymbol(aRank)} ⊕ ${getSymbol(bRank)} = ${getSymbol(resultRank)}`,
+                resultPos
+            );
+
+            // تحديث المرحلة
+            checkGameStage(newEssence);
+
+            return newEssence;
+        }
+
+        function getSymbol(rank) {
+            if (rank === "absolute") return "❶";
+            if (rank === "potential") return "0ₚ";
+            if (rank === "relational") return "∞";
+            if (typeof rank === "number") {
+                const symbols = ["⓪", "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"];
+                return rank < symbols.length ? symbols[rank] : `(${rank})`;
+            }
+            return rank;
+        }
+
+        function createMergeEffect(position) {
+            // وميض اندماجي
+            const flashGeo = new THREE.SphereGeometry(1, 32, 32);
+            const flashMat = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending,
+            });
+            const flash = new THREE.Mesh(flashGeo, flashMat);
+            flash.position.copy(position);
+            scene.add(flash);
+
+            // اختفاء تدريجي
+            const startTime = performance.now();
+
+            function animateFlash() {
+                const elapsed = (performance.now() - startTime) / 1000;
+                if (elapsed < 1.5) {
+                    flash.scale.setScalar(1 + elapsed * 3);
+                    flash.material.opacity = 0.8 * (1 - elapsed / 1.5);
+                    requestAnimationFrame(animateFlash);
+                } else {
+                    scene.remove(flash);
+                    flash.geometry.dispose();
+                    flash.material.dispose();
+                }
+            }
+            animateFlash();
+        }
+
+        function showFloatingText(text, position) {
+            const div = document.createElement("div");
+            div.textContent = text;
+            div.style.cssText = `
+            position: fixed;
+            color: #FFD700;
+            font-size: 1.2rem;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 15;
+            text-shadow: 0 0 10px rgba(255,215,0,0.8);
+            animation: floatUp 2s ease-out forwards;
+          `;
+            document.body.appendChild(div);
+
+            const vector = position.clone().project(camera);
+            const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+            div.style.left = x + "px";
+            div.style.top = y + "px";
+
+            setTimeout(() => div.remove(), 2000);
+        }
+
+        function checkGameStage(essence) {
+            if (gameStage === "الغيب" && essence.rank === "relational") {
+                gameStage = "الفيض";
+                document.getElementById("instructions").textContent =
+                    "أحسنت! استمر في بناء سلسلة الأعداد حتى ⑦";
+            }
+            if (gameStage === "الفيض" && essence.rank === 7) {
+                gameStage = "الشبكة";
+                document.getElementById("instructions").textContent =
+                    "⑦ - رتبة أولية! ابنِ شبكة من 20 كياناً أبيض";
+                showFloatingText("⑦ – رتبة أولية. إنها تجلٍّ نقي من المطلق", essence.position);
+            }
+        }
+
+        // ============================================
+        // التفاعل بالماوس واللمس
+        // ============================================
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let selectedEssence = null;
+        let isDragging = false;
+        let dragPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+        const offset = new THREE.Vector3();
+
+        function onMouseDown(event) {
+            initAudio();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(
+                allEssences.map((e) => e.mesh),
+                true
+            );
+
+            if (intersects.length > 0) {
+                let obj = intersects[0].object;
+                while (obj && !obj.userData.essence) {
+                    obj = obj.parent;
+                }
+                if (obj && obj.userData.essence) {
+                    const essence = obj.userData.essence;
+                    if (essence.type === "absolute") {
+                        // النقر على ❶ يصدر همهمة
+                        if (baseDroneGain) {
+                            baseDroneGain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                            baseDroneGain.gain.exponentialRampToValueAtTime(0.03, audioCtx.currentTime + 2);
+                        }
+                        showFloatingText("أَنَا الَّذِي لَا يُدْرَك، وَلَكِنِّي أَتَجَلَّى فِي كُلِّ شَيْء",
+                            essence.position);
+                    } else {
+                        selectedEssence = essence;
+                        isDragging = true;
+                        essence.isDragging = true;
+                        dragPlane.constant = -essence.position.z;
+                        const intersection = new THREE.Vector3();
+                        raycaster.ray.intersectPlane(dragPlane, intersection);
+                        offset.copy(intersection).sub(essence.position);
+                    }
+                }
+            }
+        }
+
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            if (isDragging && selectedEssence) {
+                raycaster.setFromCamera(mouse, camera);
+                const intersection = new THREE.Vector3();
+                if (raycaster.ray.intersectPlane(dragPlane, intersection)) {
+                    const newPos = intersection.sub(offset);
+                    selectedEssence.position.copy(newPos);
+                    selectedEssence.mesh.position.copy(newPos);
+                }
+            }
+
+            // تحديث tooltip
+            updateTooltip(event);
+        }
+
+        function onMouseUp(event) {
+            if (isDragging && selectedEssence) {
+                // التحقق من الإسقاط على كيان آخر
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(
+                    allEssences.map((e) => e.mesh),
+                    true
+                );
+
+                let dropTarget = null;
+                if (intersects.length > 0) {
+                    let obj = intersects[0].object;
+                    while (obj && !obj.userData.essence) {
+                        obj = obj.parent;
+                    }
+                    if (obj && obj.userData.essence && obj.userData.essence !== selectedEssence) {
+                        dropTarget = obj.userData.essence;
+                    }
+                }
+
+                if (dropTarget && dropTarget.type !== "absolute") {
+                    applyTrinitarianAddition(selectedEssence, dropTarget);
+                } else if (
+                    selectedEssence.type === "number" &&
+                    selectedEssence.bs < 0.67 &&
+                    !dropTarget
+                ) {
+                    // إسقاط في الفراغ = تجلي
+                    selectedEssence.bs = Math.max(selectedEssence.bs, 0.67);
+                    playEmanationSound();
+                    showFloatingText("تجلّى!", selectedEssence.position);
+                }
+
+                selectedEssence.isDragging = false;
+                selectedEssence = null;
+                isDragging = false;
+            }
+        }
+
+        function onDoubleClick(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(
+                allEssences.map((e) => e.mesh),
+                true
+            );
+
+            if (intersects.length > 0) {
+                let obj = intersects[0].object;
+                while (obj && !obj.userData.essence) {
+                    obj = obj.parent;
+                }
+                if (obj && obj.userData.essence) {
+                    showTooltipDetailed(obj.userData.essence, event.clientX, event.clientY);
+                }
+            }
+        }
+
+        function updateTooltip(event) {
+            if (isDragging) {
+                document.getElementById("tooltip").style.display = "none";
+                return;
+            }
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(
+                allEssences.map((e) => e.mesh),
+                true
+            );
+
+            const tooltip = document.getElementById("tooltip");
+            if (intersects.length > 0) {
+                let obj = intersects[0].object;
+                while (obj && !obj.userData.essence) {
+                    obj = obj.parent;
+                }
+                if (obj && obj.userData.essence) {
+                    const e = obj.userData.essence;
+                    tooltip.style.display = "block";
+                    tooltip.style.left = event.clientX + 20 + "px";
+                    tooltip.style.top = event.clientY - 20 + "px";
+                    tooltip.innerHTML = `
+                <div class="tooltip-title">${getSymbol(e.rank)}</div>
+                <div class="tooltip-detail">BS: ${e.bs.toFixed(3)}</div>
+                <div class="tooltip-detail">اتصالات: ${e.connections.length}</div>
+              `;
+                    return;
+                }
+            }
+            tooltip.style.display = "none";
+        }
+
+        function showTooltipDetailed(essence, x, y) {
+            const tooltip = document.getElementById("tooltip");
+            tooltip.style.display = "block";
+            tooltip.style.left = x + 20 + "px";
+            tooltip.style.top = y - 20 + "px";
+            tooltip.innerHTML = `
+            <div class="tooltip-title">${getSymbol(essence.rank)} - بطاقة هوية</div>
+            <div class="tooltip-detail">BS: ${essence.bs.toFixed(4)}</div>
+            <div class="tooltip-detail">اتصالات: ${essence.connections.length}</div>
+            <div class="tooltip-detail">العمر: ${essence.lifetime.toFixed(1)} ثانية</div>
+            <div class="tooltip-detail">إنتروبيا: ${essence.entropy.toFixed(3)}</div>
+          `;
+            setTimeout(() => {
+                if (tooltip.innerHTML.includes("بطاقة هوية")) {
+                    tooltip.style.display = "none";
+                }
+            }, 3000);
+        }
+
+        function toggleRevelation() {
+            isRevelationMode = !isRevelationMode;
+            const btn = document.getElementById("revelation-btn");
+            if (isRevelationMode) {
+                btn.textContent = "🔮 العودة";
+                // إظهار الأرقام الأولية
+                allEssences.forEach((e) => {
+                    if (e.mesh && e.mesh.material) {
+                        e.mesh.material.wireframe = true;
+                        e.mesh.material.opacity = 0.7;
+                        e.mesh.material.transparent = true;
+                    }
+                });
+            } else {
+                btn.textContent = "✨ الوحي";
+                allEssences.forEach((e) => {
+                    if (e.mesh && e.mesh.material) {
+                        e.mesh.material.wireframe = false;
+                        e.mesh.material.opacity = e.type === "potential" ? 0.5 : 1;
+                    }
+                });
+            }
+        }
+
+        // ============================================
+        // حلقة التحديث الرئيسية
+        // ============================================
+        let lastPotentialSpawn = 0;
+        let lastVignetteUpdate = 0;
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const deltaTime = Math.min(clock.getDelta(), 0.1);
+
+            // تحديث الكيانات
+            allEssences.forEach((e) => e.update(deltaTime));
+
+            // توليد بذور الإمكان دورياً
+            lastPotentialSpawn += deltaTime;
+            const spawnInterval = gameStage === "الغيب" ? 5 : gameStage === "الفيض" ? 3 : 2;
+            if (lastPotentialSpawn > spawnInterval) {
+                lastPotentialSpawn = 0;
+                spawnPotentialSeed();
+            }
+
+            // تحديث الروابط بين الكيانات
+            updateConnections(deltaTime);
+
+            // تحديث HUD
+            updateHUD();
+
+            // تحديث تأثير التشوش
+            lastVignetteUpdate += deltaTime;
+            if (lastVignetteUpdate > 1) {
+                lastVignetteUpdate = 0;
+                updateVignette();
+            }
+
+            // تدوير الكاميرا ببطء
+            const time = performance.now() * 0.0001;
+            camera.position.x = Math.sin(time) * 12;
+            camera.position.z = Math.cos(time) * 12;
+            camera.lookAt(0, 0, 0);
+
+            renderer.render(scene, camera);
+        }
+
+        function updateConnections(deltaTime) {
+            // تبسيط: فحص الكيانات القريبة وإنشاء روابط
+            const whiteEssences = allEssences.filter(
+                (e) => e.type === "number" && e.bs >= 0.67
+            );
+
+            for (let i = 0; i < whiteEssences.length; i++) {
+                for (let j = i + 1; j < whiteEssences.length; j++) {
+                    const dist = whiteEssences[i].position.distanceTo(whiteEssences[j].position);
+                    const threshold = 3 + (whiteEssences[i].bs + whiteEssences[j].bs) * 2;
+
+                    if (dist < threshold) {
+                        if (!whiteEssences[i].connections.includes(whiteEssences[j])) {
+                            whiteEssences[i].connections.push(whiteEssences[j]);
+                            whiteEssences[j].connections.push(whiteEssences[i]);
+                        }
+                    } else if (dist > threshold * 2) {
+                        // قطع الرابط
+                        const idxI = whiteEssences[i].connections.indexOf(whiteEssences[j]);
+                        if (idxI > -1) whiteEssences[i].connections.splice(idxI, 1);
+                        const idxJ = whiteEssences[j].connections.indexOf(whiteEssences[i]);
+                        if (idxJ > -1) whiteEssences[j].connections.splice(idxJ, 1);
+                    }
+                }
+            }
+        }
+
+        function updateHUD() {
+            const highBS = allEssences.filter((e) => e.bs > 0.9).length;
+            const activeLinks = allEssences.reduce(
+                (sum, e) => sum + e.connections.length,
+                0
+            ) / 2;
+            document.getElementById("high-bs-count").textContent = highBS;
+            document.getElementById("active-links-count").textContent = Math.floor(activeLinks);
+            document.getElementById("potential-seeds-count").textContent = potentialSeeds.length;
+
+            // شريط الوجود
+            const avgBS =
+                allEssences.length > 0 ?
+                allEssences.reduce((sum, e) => sum + e.bs, 0) / allEssences.length :
+                0.5;
+            document.getElementById("existence-bar").style.width = avgBS * 100 + "%";
+        }
+
+        function updateVignette() {
+            const avgBS =
+                allEssences.length > 0 ?
+                allEssences.reduce((sum, e) => sum + e.bs, 0) / allEssences.length :
+                0.5;
+            const vignette = document.getElementById("vignette");
+            if (avgBS < 0.3) {
+                vignette.style.opacity = 1 - avgBS;
+            } else {
+                vignette.style.opacity = 0;
+            }
+        }
+
+        // ============================================
+        // مستمعي الأحداث
+        // ============================================
+        window.addEventListener("mousedown", onMouseDown);
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", onMouseUp);
+        window.addEventListener("dblclick", onDoubleClick);
+
+        // اللمس
+        window.addEventListener("touchstart", (e) => {
+            if (e.touches.length === 1) {
+                onMouseDown(e.touches[0]);
+            }
+        });
+        window.addEventListener("touchmove", (e) => {
+            if (e.touches.length === 1) {
+                onMouseMove(e.touches[0]);
+            }
+        });
+        window.addEventListener("touchend", (e) => {
+            onMouseUp(e.changedTouches[0]);
+        });
+
+        window.addEventListener("resize", () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ============================================
+        // بدء المحاكاة
+        // ============================================
+        function startSimulation() {
+            // إخفاء النص الافتتاحي
+            const openingScroll = document.getElementById("opening-scroll");
+            openingScroll.classList.add("fading");
+            setTimeout(() => {
+                openingScroll.classList.add("hidden");
+            }, 2000);
+
+            // إنشاء المصدر المطلق
+            createAbsolute();
+
+            // بدء حلقة التحديث
+            animate();
+
+            // إزالة تعليمات البداية بعد فترة
+            setTimeout(() => {
+                document.getElementById("instructions").style.opacity = "0.7";
+            }, 10000);
+        }
+
+        // بدء بعد 6 ثواني من التحميل
+        setTimeout(startSimulation, 6000);
+
+        // السماح بالنقر على الشاشة لبدء الصوت
+        document.addEventListener(
+            "click",
+            () => {
+                initAudio();
+            }, { once: true }
+        );
+
+        console.log("🅂 محاكاة إنجيل التجلي - نظام 𝕊");
+        console.log("❶ الكون الثالوثي يحاكي الآن");
+        console.log("∞ ارفع صوتك لسماع همهمة الخلق");
+    </script>
+
+    <style>
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px);
+            }
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+    </style>
+</body>
+</html>
