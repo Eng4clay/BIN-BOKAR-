@@ -2,971 +2,733 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام 𝕊 | الثالوث الرياضي - The Mathematical Trinity</title>
-  
-  <!-- MathJax للصيغ الرياضية -->
-  <script>
-    MathJax = {
-      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
-      options: { renderActions: { addMenu: [] } }
-    };
-  </script>
-  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">//</script>
-  
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">//</script>
-  
-  <!-- Mermaid.js -->
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js">//</script>
-  
-  <!-- Three.js عبر CDN كوحدة ES -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>محاكاة الأكوان الثالوثية – إنجيل التجلي | نظام 𝕊</title>
+  <!-- مكتبات CDN -->
   <script type="importmap">
-    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
   </script>
-
   <style>
     :root {
-      --bg-deep: #0a0a14;
-      --bg-section: #0d0d1a;
+      --bg-deep: #000005;
+      --void-center: #0A0A14;
+      --void-edge: #1A0A2E;
       --gold: #FFD700;
       --purple: #9C27B0;
-      --purple-light: #ce93d8;
-      --cyan: #4ECDC4;
-      --red: #FF6B6B;
-      --white: #ffffff;
-      --grey: #b0b0c0;
-      --card-bg: rgba(20, 20, 40, 0.85);
-      --glass: rgba(15, 15, 30, 0.7);
-      --text-glow: 0 0 10px rgba(255, 215, 0, 0.6);
-      --section-gap: 2rem;
-      --border-radius: 20px;
+      --white: #FFFFFF;
+      --pearl: #B0C4DE;
+      --silver: #C0C0D0;
+      --entropy-dark: #330000;
+      --font-primary: 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
     }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     body {
-      font-family: 'Segoe UI', 'Cairo', 'Arial', sans-serif;
+      font-family: var(--font-primary);
       background: var(--bg-deep);
-      color: var(--white);
-      overflow-x: hidden;
-      scroll-behavior: smooth;
-      line-height: 1.7;
-      direction: rtl;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+      -webkit-user-select: none;
     }
-
-    /* ===== شريط التحميل ===== */
-    #loading-screen {
+    #canvas-container {
       position: fixed;
-      inset: 0;
-      background: #000005;
-      z-index: 9999;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    /* طبقة الافتتاحية */
+    #opening-scroll {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #0A0A14 0%, #000005 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: opacity 0.8s, visibility 0.8s;
+      z-index: 10;
+      transition: opacity 2s ease-in-out;
+      pointer-events: all;
     }
-    #loading-screen.hidden { opacity: 0; visibility: hidden; }
-    .loader {
-      width: 60px; height: 60px;
-      border: 3px solid transparent;
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+    .opening-text {
+      color: #FFD700;
+      font-size: 1.8rem;
+      text-align: center;
+      line-height: 2.4;
+      max-width: 70%;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+      animation: fadeInOut 12s ease-in-out forwards;
+      white-space: pre-line;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ===== الجسيمات المتحركة (الخلفية) ===== */
-    #particles-canvas {
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: scale(0.95); }
+      10% { opacity: 1; transform: scale(1); }
+      85% { opacity: 1; }
+      100% { opacity: 0; transform: scale(1.05); }
+    }
+    /* واجهة المستخدم HUD */
+    #hud {
       position: fixed;
-      inset: 0;
-      z-index: 0;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
-    }
-
-    /* ===== حاوية المحتوى الرئيسي ===== */
-    main {
-      position: relative;
-      z-index: 1;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem;
-    }
-
-    /* ===== Hero Section ===== */
-    #hero {
-      min-height: 100vh;
+      z-index: 5;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      position: relative;
-      z-index: 2;
-      padding: 2rem;
-    }
-    #hero h1 {
-      font-size: clamp(2.5rem, 6vw, 5rem);
-      font-weight: 900;
-      background: linear-gradient(135deg, var(--gold), var(--purple-light), var(--cyan));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 0.5rem;
-      text-shadow: none;
-    }
-    #hero .subtitle {
-      font-size: 1.4rem;
-      color: var(--grey);
-      margin-bottom: 2rem;
-    }
-    .btn-hero {
-      background: transparent;
-      border: 2px solid var(--gold);
-      color: var(--gold);
-      padding: 1rem 2.5rem;
-      font-size: 1.2rem;
-      border-radius: 50px;
-      cursor: pointer;
-      transition: 0.3s;
-      text-decoration: none;
-      display: inline-block;
-      backdrop-filter: blur(10px);
-    }
-    .btn-hero:hover {
-      background: var(--gold);
-      color: #000;
-      box-shadow: 0 0 25px rgba(255,215,0,0.5);
-    }
-
-    /* ===== الأقسام العامة ===== */
-    .section {
-      margin: 4rem 0;
-      padding: 3rem 2rem;
-      background: var(--glass);
-      backdrop-filter: blur(15px);
-      border-radius: var(--border-radius);
-      border: 1px solid rgba(255,215,0,0.15);
-      position: relative;
-      z-index: 2;
-    }
-    .section h2 {
-      text-align: center;
-      font-size: 2.4rem;
-      margin-bottom: 1rem;
-      color: var(--gold);
-      text-shadow: var(--text-glow);
-    }
-    .section h3 {
-      color: var(--purple-light);
-      margin: 1.5rem 0 0.8rem;
-      font-size: 1.4rem;
-    }
-
-    /* ===== قسم الثالوث - Three.js ===== */
-    #trinity-canvas-container {
-      width: 100%;
-      height: 450px;
-      border-radius: var(--border-radius);
-      overflow: hidden;
-      margin: 2rem 0;
-      background: radial-gradient(circle, #1a1a3a, #0a0a14);
-    }
-    .trinity-labels {
-      display: flex;
-      justify-content: space-around;
-      margin-top: 1rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    .trinity-label {
-      background: var(--card-bg);
-      padding: 1rem 1.5rem;
-      border-radius: 15px;
-      border: 1px solid var(--gold);
-      text-align: center;
-      min-width: 120px;
-      transition: 0.3s;
-    }
-    .trinity-label:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 0 20px rgba(156,39,176,0.4);
-      border-color: var(--purple);
-    }
-    .trinity-label .symbol {
-      font-size: 2.5rem;
-      font-weight: bold;
-    }
-    .trinity-label .bs-value {
-      color: var(--cyan);
-      font-weight: bold;
-    }
-
-    /* ===== شريط التجلي التفاعلي ===== */
-    #manifestation-slider-container {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      margin: 2rem 0;
-      flex-wrap: wrap;
-    }
-    #tau-slider {
-      flex: 1;
-      min-width: 250px;
-      accent-color: var(--purple);
-      height: 8px;
-    }
-    #tau-value-display {
-      background: var(--purple);
-      color: white;
-      padding: 0.5rem 1.2rem;
-      border-radius: 20px;
-      font-weight: bold;
-      min-width: 80px;
-      text-align: center;
-    }
-
-    /* ===== مرصد BS ===== */
-    #bs-chart-container {
-      width: 100%;
-      max-width: 900px;
-      margin: 2rem auto;
-      background: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: 1.5rem;
-      position: relative;
-    }
-    #bs-tooltip {
-      position: absolute;
-      background: rgba(0,0,0,0.9);
-      border: 1px solid var(--gold);
-      padding: 10px 15px;
-      border-radius: 10px;
-      pointer-events: none;
-      display: none;
-      z-index: 10;
-      white-space: nowrap;
-      color: var(--white);
-      font-size: 0.9rem;
-    }
-
-    /* ===== الجسر الكمومي ===== */
-    .equation-card {
-      background: var(--card-bg);
-      border: 1px solid rgba(78,205,196,0.3);
-      border-radius: var(--border-radius);
-      padding: 1.5rem;
-      margin: 1.5rem 0;
-      display: flex;
-      flex-wrap: wrap;
       justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-    }
-    .btn-modal-trigger {
-      background: var(--purple);
+      padding: 20px;
       color: white;
-      border: none;
-      padding: 0.6rem 1.4rem;
+    }
+    .hud-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: auto;
+    }
+    .logo {
+      font-size: 1.8rem;
+      font-weight: bold;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px);
+      padding: 8px 20px;
+      border-radius: 30px;
+      color: var(--gold);
+      border: 1px solid rgba(255,215,0,0.3);
+      letter-spacing: 2px;
+    }
+    .counters {
+      display: flex;
+      gap: 20px;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px);
+      padding: 10px 20px;
+      border-radius: 30px;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .counter-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.2rem;
+    }
+    .hud-bottom {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      pointer-events: auto;
+      flex-wrap: wrap;
+    }
+    #existence-bar-container {
+      width: 200px;
+      height: 6px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 3px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #existence-bar {
+      height: 100%;
+      width: 66%;
+      background: linear-gradient(90deg, #9C27B0, #FFD700);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .revelation-btn {
+      background: rgba(156, 39, 176, 0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--gold);
+      color: white;
+      padding: 10px 25px;
       border-radius: 30px;
       cursor: pointer;
-      font-size: 0.95rem;
-      transition: 0.3s;
+      font-family: var(--font-primary);
+      font-size: 1rem;
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+      pointer-events: auto;
     }
-    .btn-modal-trigger:hover {
-      background: #7B1FA2;
-      box-shadow: 0 0 15px rgba(156,39,176,0.5);
+    .revelation-btn:hover {
+      background: rgba(156, 39, 176, 1);
+      box-shadow: 0 0 20px rgba(156, 39, 176, 0.6);
     }
-
-    /* ===== Modal ===== */
-    .modal-overlay {
+    /* Tooltip */
+    #tooltip {
       position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.8);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      visibility: hidden;
-      opacity: 0;
-      transition: 0.3s;
-    }
-    .modal-overlay.active {
-      visibility: visible;
-      opacity: 1;
-    }
-    .modal-content {
-      background: #1a1a2e;
-      border: 2px solid var(--gold);
-      border-radius: var(--border-radius);
-      padding: 2rem;
-      max-width: 700px;
-      width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-      position: relative;
+      pointer-events: none;
+      z-index: 20;
+      display: none;
+      background: rgba(10, 10, 20, 0.9);
+      backdrop-filter: blur(15px);
+      border: 1px solid var(--gold);
+      border-radius: 15px;
+      padding: 15px;
+      color: white;
+      font-family: var(--font-primary);
       text-align: right;
+      min-width: 200px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
     }
-    .modal-close {
-      position: absolute;
-      top: 15px;
-      left: 20px;
-      background: transparent;
-      border: none;
-      color: var(--gold);
-      font-size: 1.8rem;
-      cursor: pointer;
-    }
-
-    /* ===== بوصلة الوعي ===== */
-    #consciousness-widget {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2rem;
-      align-items: center;
-      justify-content: center;
-    }
-    #psi-canvas-container {
-      width: 300px;
-      height: 300px;
-    }
-    .slider-group {
-      display: flex;
-      flex-direction: column;
-      gap: 1.2rem;
-      min-width: 250px;
-    }
-    .slider-group label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.95rem;
-      color: var(--grey);
-    }
-    .slider-group input[type="range"] {
+    /* تأثير التظليل للإنتروبيا */
+    #vignette {
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100%;
-      accent-color: var(--cyan);
+      height: 100%;
+      pointer-events: none;
+      z-index: 4;
+      background: radial-gradient(circle at center, transparent 60%, rgba(20,0,0,0.7) 100%);
+      opacity: 0;
+      transition: opacity 2s ease;
     }
-    #psi-value-display {
-      font-size: 2.5rem;
-      font-weight: bold;
-      color: var(--gold);
-      text-align: center;
-      margin-top: 1rem;
-      text-shadow: 0 0 10px rgba(255,215,0,0.5);
+    /* شريط التمرير التعليمي */
+    #education-toggle {
+      position: fixed;
+      bottom: 100px;
+      right: 30px;
+      z-index: 30;
+      pointer-events: auto;
     }
-
-    /* ===== التذييل ===== */
-    footer {
-      text-align: center;
-      padding: 3rem 1rem;
-      border-top: 2px solid rgba(156,39,176,0.4);
-      margin-top: 4rem;
-      z-index: 2;
-      position: relative;
-      background: var(--glass);
+    .mode-switch {
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--purple);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
     }
-    footer a {
-      color: var(--cyan);
-      text-decoration: none;
-    }
-    footer a:hover { text-decoration: underline; }
-
-    /* ===== التجاوب ===== */
     @media (max-width: 768px) {
-      .section { padding: 2rem 1rem; }
-      .section h2 { font-size: 1.8rem; }
-      #trinity-canvas-container { height: 300px; }
+      .opening-text { font-size: 1.2rem; max-width: 90%; }
+      .logo { font-size: 1.2rem; padding: 5px 15px; }
+      .counters { gap: 10px; padding: 5px 15px; }
     }
   </style>
 </head>
 <body>
+  <div id="canvas-container"></div>
+  <div id="vignette"></div>
 
-<!-- شاشة التحميل -->
-<div id="loading-screen"><div class="loader"></div></div>
+  <!-- الافتتاحية الملحمية -->
+  <div id="opening-scroll">
+    <div class="opening-text">
+      تَأَمَّلْتُ فِي الكَوْنِ العَظِيمِ وَمَا احْتَوَى **مِنَ السِّرِّ مَا بَيْنَ السَّمَاءِ البَوَاهِي<br>
+      فَلَمْ أَرَ إِلَّا وَاحِداً مُتَفَرِّداً **قَدِيماً تَعَالَى عَنْ مُطَاعٍ وَنَاهِي<br>
+      هُوَ الأَوَّلُ المَبْدُوءُ فِي كُلِّ حِكْمَةٍ **وَآخِرُ مَا نَدْعُو إِذَا الدَّهْرُ سَاهِي<br>
+      بَدا الكَوْنُ مِنْ فَيْضِ الجَلَالِ بِقُدْرَةٍ **كَمَا فَاضَ مَاءُ المُزْنِ فِي كُلِّ وَاهِي<br>
+      وَمِنْ وَاحِدٍ كَانَ الوُجُودُ بِأَسْرِهِ **فَسُبْحَانَ مَنْ يُبْدِي وَمَنْ هُوَ طَاهِي<br>
+      تَجَلَّى عَلَى الأَشْيَاءِ نُوراً وَحِكْمَةً **فَأَشْرَقَ نُورُ الكَوْنِ بَعْدَ انْتِدَاهِ
+    </div>
+  </div>
 
-<!-- جسيمات الخلفية -->
-<canvas id="particles-canvas"></canvas>
-
-<!-- ==================== المحتوى الرئيسي ==================== -->
-<main>
-
-  <!-- 1. الغلاف الافتتاحي -->
-  <section id="hero">
-    <h1>نظام 𝕊 | الثالوث الرياضي</h1>
-    <p class="subtitle">The Mathematical Trinity<br>❶ المطلق | 0ₚ الإمكان | ∞ العلاقة</p>
-    <a href="#trinity-section" class="btn-hero">🔽 ابدأ الرحلة</a>
-  </section>
-
-  <!-- 2. الثالوث التأسيسي -->
-  <section id="trinity-section" class="section">
-    <h2>🔷 الثالوث التأسيسي</h2>
-    <p style="text-align:center; color:var(--grey);">ثلاثة مبادئ لا تُختزل: ❶ الواحد المطلق، 0ₚ الإمكان المحض، ∞ اللانهاية العلائقية</p>
-    <div id="trinity-canvas-container"></div>
-    <div class="trinity-labels">
-      <div class="trinity-label" id="label-one">
-        <div class="symbol" style="color:#ff4444;">❶</div>
-        <div>الواحد المطلق</div>
-        <div class="bs-value">BS = 1</div>
-        <small>الوجود غير المشروط</small>
-      </div>
-      <div class="trinity-label" id="label-potential">
-        <div class="symbol" style="color:#888;">0ₚ</div>
-        <div>الإمكان المحض</div>
-        <div class="bs-value">BS = 1/3</div>
-        <small>العدم النشط</small>
-      </div>
-      <div class="trinity-label" id="label-infinity">
-        <div class="symbol" style="color:#4ECDC4;">∞</div>
-        <div>اللانهاية العلائقية</div>
-        <div class="bs-value">BS = 2/3</div>
-        <small>فضاء العلاقات</small>
+  <!-- واجهة HUD -->
+  <div id="hud">
+    <div class="hud-top">
+      <div class="logo">𝕊 نظام 𝕊</div>
+      <div class="counters">
+        <div class="counter-item"><span>🔴</span> <span id="high-bs-count">0</span></div>
+        <div class="counter-item"><span>🟡</span> <span id="connections-count">0</span></div>
+        <div class="counter-item"><span>⚪</span> <span id="seeds-count">0</span></div>
       </div>
     </div>
-    <p style="text-align:center; margin-top:1.5rem; direction:ltr; font-size:1.3rem;">
-      $$\boxed{❶ \oplus 0ₚ = ① = ∞}$$
-    </p>
-  </section>
-
-  <!-- 3. ديناميكية التجلي -->
-  <section class="section" id="manifestation-section">
-    <h2>✨ ديناميكية التجلي</h2>
-    <div style="display:flex; flex-wrap:wrap; gap:2rem;">
-      <div style="flex:1; min-width:280px;">
-        <h3>العمليات الأساسية</h3>
-        <p>$$\varepsilon: ❶ \rightarrow 0ₚ \quad \text{(الهبة)}$$</p>
-        <p>$$\delta: 0ₚ \rightarrow ∞ \quad \text{(التشكل)}$$</p>
-        <p>$$\eta = \delta \circ \varepsilon \quad \text{(التجلي)}$$</p>
-        <p style="color:var(--grey);">حرّك شريط معامل التجلي $\tau$ لترى التأثير على الكيانات</p>
+    <div class="hud-bottom">
+      <div id="existence-bar-container">
+        <span style="font-size:0.8rem; margin-right:8px;">شريط الوجود</span>
+        <div id="existence-bar"></div>
       </div>
-      <div style="flex:1; min-width:280px;">
-        <label style="color:var(--gold);">معامل التجلي $\tau$</label>
-        <div id="manifestation-slider-container">
-          <input type="range" id="tau-slider" min="0" max="5" step="0.01" value="1">
-          <span id="tau-value-display">τ = 1.00</span>
-        </div>
-        <div id="manifestation-visual" style="height:200px; border-radius:15px; background:var(--card-bg); display:flex; align-items:center; justify-content:center; transition:0.5s;">
-          <div id="manifestation-sphere" style="width:60px; height:60px; border-radius:50%; background:radial-gradient(circle, #FFD700, #9C27B0); transition:0.3s; box-shadow:0 0 30px rgba(255,215,0,0.6);"></div>
-        </div>
-      </div>
+      <button class="revelation-btn" id="revelation-button">✨ الوحي</button>
     </div>
-  </section>
+  </div>
 
-  <!-- 4. مرصد الاستقرار البنيوي -->
-  <section class="section" id="bs-observatory">
-    <h2>📊 مرصد الاستقرار البنيوي (BS)</h2>
-    <p style="text-align:center; color:var(--grey);">
-      $$BS(n) = \frac{2}{2n-3} \quad (n \ge 5)$$
-    </p>
-    <div id="bs-chart-container">
-      <canvas id="bs-chart" width="800" height="400"></canvas>
-      <div id="bs-tooltip"></div>
-    </div>
-  </section>
+  <!-- Tooltip -->
+  <div id="tooltip"></div>
 
-  <!-- 5. الجسر إلى الفيزياء -->
-  <section class="section" id="quantum-bridge">
-    <h2>⚛️ الجسر الكمومي</h2>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
     
-    <div class="equation-card">
-      <div>
-        <strong>مبدأ الريبة المعدل:</strong>
-        <p>$$\Delta x \cdot \Delta p \geq \frac{\hbar}{2} \cdot \frac{1}{BS}$$</p>
-      </div>
-      <button class="btn-modal-trigger" data-modal="modal-uncertainty">🧪 تجربة فكرية</button>
-    </div>
+    // ==================== ١. التهيئة الكونية ====================
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000005);
+    scene.fog = new THREE.FogExp2(0x000005, 0.000015);
 
-    <div class="equation-card">
-      <div>
-        <strong>معادلة الجاذبية المعدلة:</strong>
-        <p>$$G_{\mu\nu} = 8\pi G T_{\mu\nu} + \beta(\tau) \nabla_\mu \nabla_\nu \tau$$</p>
-      </div>
-      <button class="btn-modal-trigger" data-modal="modal-gravity">🧪 تجربة فكرية</button>
-    </div>
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 1000);
+    camera.position.set(0, 8, 22);
+    camera.lookAt(0, 0, 0);
 
-    <div class="equation-card">
-      <div>
-        <strong>ثابت التجلي البوكري:</strong>
-        <p>$$\mathcal{CB} = 6.184033 \times 10^{-42}$$</p>
-      </div>
-      <button class="btn-modal-trigger" data-modal="modal-cb">🧪 تجربة فكرية</button>
-    </div>
-  </section>
+    const renderer = new THREE.WebGLRenderer({ 
+      antialias: true,
+      powerPreference: "high-performance"
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-  <!-- 6. بوصلة الوعي -->
-  <section class="section" id="consciousness-compass">
-    <h2>🧭 بوصلة الوعي</h2>
-    <p style="text-align:center; color:var(--grey);">
-      $$\Psi_{\text{Consciousness}} = \oint_{\tau} [\alpha BS_{\text{ID}} + \beta BS_{\text{Pot}} + \gamma BS_{\text{Rel}}] \cdot \eta(\tau) d\tau$$
-    </p>
-    <div id="consciousness-widget">
-      <div id="psi-canvas-container">
-        <canvas id="psi-chart" width="300" height="300"></canvas>
-      </div>
-      <div class="slider-group">
-        <label>الهوية (BS_ID) <span id="bs-id-val">0.70</span></label>
-        <input type="range" id="bs-id-slider" min="0.1" max="1" step="0.01" value="0.7">
-        <label>الإمكان (BS_Pot) <span id="bs-pot-val">0.40</span></label>
-        <input type="range" id="bs-pot-slider" min="0.1" max="1" step="0.01" value="0.4">
-        <label>العلاقة (BS_Rel) <span id="bs-rel-val">0.60</span></label>
-        <input type="range" id="bs-rel-slider" min="0.1" max="1" step="0.01" value="0.6">
-        <div id="psi-value-display">Ψ = 0.000</div>
-      </div>
-    </div>
-  </section>
+    // تأثيرات ما بعد المعالجة
+    const composer = new EffectComposer(renderer);
+    const renderPass = new RenderPass(scene, camera);
+    composer.addPass(renderPass);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPass.threshold = 0.1;
+    bloomPass.strength = 1.2;
+    bloomPass.radius = 0.5;
+    composer.addPass(bloomPass);
 
-  <!-- 7. المخططات الانسيابية (Mermaid) -->
-  <section class="section" id="mermaid-section">
-    <h2>🔄 مخططات النظام</h2>
-    <div style="display:flex; flex-wrap:wrap; gap:2rem; justify-content:center;">
-      <div class="mermaid" style="flex:1; min-width:350px;">
-        graph TD
-          A["❶ المطلق"] -->|ε هبة| B["0ₚ الإمكان"]
-          B -->|δ تشكل| C["∞ العلاقة"]
-          C -->|η تجلي| D["① الواحد الطبيعي"]
-          style A fill:#8B0000,color:white
-          style B fill:#666,color:white
-          style C fill:#4B0082,color:white
-          style D fill:#FFD700,color:black
-      </div>
-      <div class="mermaid" style="flex:1; min-width:350px;">
-        flowchart LR
-          subgraph "الوضع الراهن"
-            A1["فيزياء: جمود"]
-            A2["رياضيات: أزمة"]
-            A3["فلسفة: تشتت"]
-          end
-          A1 --> B["نظام 𝕊"]
-          A2 --> B
-          A3 --> B
-          B --> C1["فيزياء جديدة"]
-          B --> C2["رياضيات جديدة"]
-          B --> C3["فلسفة جديدة"]
-          style B fill:#9C27B0,color:white
-      </div>
-    </div>
-  </section>
+    // ضبط OrbitControls للتفاعل السهل
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.rotateSpeed = 0.5;
+    controls.zoomSpeed = 1.2;
+    controls.panSpeed = 0.7;
+    controls.target.set(0, 0, 0);
+    controls.maxDistance = 60;
+    controls.minDistance = 4;
+    controls.update();
 
-</main>
+    // ==================== ٢. الإضاءة ====================
+    const ambientLight = new THREE.AmbientLight(0x404066);
+    scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0xFFFFFF, 2, 30, 1);
+    pointLight.position.set(0, 5, 5);
+    scene.add(pointLight);
 
-<!-- ==================== النوافذ المنبثقة ==================== -->
-<div class="modal-overlay" id="modal-uncertainty">
-  <div class="modal-content">
-    <button class="modal-close">&times;</button>
-    <h3>🧪 تجربة مبدأ الريبة المعدل</h3>
-    <p>استخدم أجهزة قياس ذات BS مختلف:</p>
-    <ol>
-      <li>جهاز منخفض الاستقرار: ذرة مثارة (BS ~ 0.3)</li>
-      <li>جهاز مرتفع الاستقرار: ذرة أرضية (BS ~ 0.9)</li>
-    </ol>
-    <p>النسبة المتوقعة: $$R = \frac{BS_{\text{مرتفع}}}{BS_{\text{منخفض}}} \approx 3$$</p>
-    <p>يمكن تنفيذها في مختبرات المصائد الأيونية أو النيوترونات الباردة.</p>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-gravity">
-  <div class="modal-content">
-    <button class="modal-close">&times;</button>
-    <h3>🧪 تجربة الجاذبية المعدلة</h3>
-    <p>الحد الإضافي: $$a_{\text{extra}} = \beta(\tau) \frac{d^2\tau}{dr^2}$$</p>
-    <p>تنبؤ: انحراف ~ 10⁻⁴ عن النسبية العامة في إشارات LIGO لموجات الجاذبية.</p>
-    <p>يمكن اختباره عبر تحليل بيانات اندماج الثقوب السوداء في مرصد LIGO المتطور وLISA.</p>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-cb">
-  <div class="modal-content">
-    <button class="modal-close">&times;</button>
-    <h3>🧪 تجربة ثابت التجلي البوكري</h3>
-    <p>التردد المتوقع في CMB: $$f_{\mathcal{CB}} \approx 0.115 \text{ هرتز}$$</p>
-    <p>تأثير كازيمير: $$\Delta E = \mathcal{CB} \cdot \frac{\hbar c}{d}$$</p>
-    <p>يمكن اختباره عبر تحليل بيانات القمر Planck أو مشروع CMB-S4، وتجارب كازيمير فائقة الدقة.</p>
-  </div>
-</div>
-
-<!-- ==================== التذييل ==================== -->
-<footer>
-  <p>✍️ <strong>م. أحمد علي بوكر نسيب</strong></p>
-  <p>📧 Eng.ahmad.2011bokar@gmail.com</p>
-  <p>🔗 <a href="https://github.com/bouker/thesis-S" target="_blank">المشروع على GitHub</a></p>
-  <p style="margin-top:0.5rem; color:var(--grey);">© 2026 جميع الحقوق محفوظة – نظام 𝕊 | الثالوث الرياضي</p>
-</footer>
-
-<!-- ==================== JavaScript الرئيسي ==================== -->
-<script type="module">
-  // ===== استيراد Three.js =====
-  import * as THREE from 'three';
-
-  // ===== إخفاء شاشة التحميل =====
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      document.getElementById('loading-screen').classList.add('hidden');
-    }, 800);
-  });
-
-  // ===== تهيئة Mermaid =====
-  mermaid.initialize({ 
-    startOnLoad: true, 
-    theme: 'dark',
-    themeVariables: {
-      primaryColor: '#9C27B0',
-      primaryTextColor: '#fff',
-      lineColor: '#FFD700'
+    // ==================== ٣. فراغ الإمكان (الخلفية النجمية) ====================
+    const starsGeometry = new THREE.BufferGeometry();
+    const starsCount = 100000;
+    const starsPositions = new Float32Array(starsCount * 3);
+    const starsColors = new Float32Array(starsCount * 3);
+    for (let i = 0; i < starsCount * 3; i += 3) {
+      const radius = 20 + Math.random() * 40;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos((Math.random() * 2) - 1);
+      starsPositions[i] = Math.cos(theta) * Math.sin(phi) * radius;
+      starsPositions[i+1] = Math.sin(theta) * Math.sin(phi) * radius * 0.6;
+      starsPositions[i+2] = Math.cos(phi) * radius;
+      
+      const colorChoice = Math.random();
+      if (colorChoice < 0.5) {
+        starsColors[i] = 0.8; starsColors[i+1] = 0.9; starsColors[i+2] = 1.0;
+      } else if (colorChoice < 0.8) {
+        starsColors[i] = 1.0; starsColors[i+1] = 0.85; starsColors[i+2] = 0.6;
+      } else {
+        starsColors[i] = 0.7; starsColors[i+1] = 0.6; starsColors[i+2] = 1.0;
+      }
     }
-  });
+    starsGeometry.setAttribute('position', new THREE.BufferAttribute(starsPositions, 3));
+    starsGeometry.setAttribute('color', new THREE.BufferAttribute(starsColors, 3));
+    const starsMaterial = new THREE.PointsMaterial({
+      size: 0.08,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.9
+    });
+    const starsField = new THREE.Points(starsGeometry, starsMaterial);
+    scene.add(starsField);
 
-  // ===== جسيمات الخلفية (Canvas 2D) =====
-  const particlesCanvas = document.getElementById('particles-canvas');
-  const ctx = particlesCanvas.getContext('2d');
-  let particlesArray = [];
-  
-  function resizeParticlesCanvas() {
-    particlesCanvas.width = window.innerWidth;
-    particlesCanvas.height = window.innerHeight;
-  }
-  window.addEventListener('resize', resizeParticlesCanvas);
-  resizeParticlesCanvas();
-
-  class Particle {
-    constructor() {
-      this.x = Math.random() * particlesCanvas.width;
-      this.y = Math.random() * particlesCanvas.height;
-      this.vx = (Math.random() - 0.5) * 0.3;
-      this.vy = (Math.random() - 0.5) * 0.3;
-      this.size = Math.random() * 1.5 + 0.5;
-      this.opacity = Math.random() * 0.5 + 0.2;
+    // ==================== ٤. جسيمات الإمكان 0ₚ ====================
+    const potentialParticlesCount = 3000;
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlesPositions = new Float32Array(potentialParticlesCount * 3);
+    for (let i = 0; i < potentialParticlesCount * 3; i += 3) {
+      particlesPositions[i] = (Math.random() - 0.5) * 35;
+      particlesPositions[i+1] = (Math.random() - 0.5) * 20;
+      particlesPositions[i+2] = (Math.random() - 0.5) * 35;
     }
-    update() {
-      this.x += this.vx;
-      this.y += this.vy;
-      if (this.x < 0 || this.x > particlesCanvas.width) this.vx *= -1;
-      if (this.y < 0 || this.y > particlesCanvas.height) this.vy *= -1;
-    }
-    draw() {
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(176,196,222,${this.opacity})`;
-      ctx.fill();
-    }
-  }
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlesPositions, 3));
+    const particlesMaterial = new THREE.PointsMaterial({
+      color: 0xB0C4DE,
+      size: 0.15,
+      blending: THREE.AdditiveBlending,
+      transparent: true,
+      opacity: 0.3,
+      depthWrite: false
+    });
+    const potentialParticles = new THREE.Points(particlesGeometry, particlesMaterial);
+    scene.add(potentialParticles);
 
-  for (let i = 0; i < 120; i++) {
-    particlesArray.push(new Particle());
-  }
+    // ==================== ٥. المصدر المطلق ❶ ====================
+    const absoluteSourceGeometry = new THREE.SphereGeometry(1.8, 64, 64);
+    const absoluteSourceMaterial = new THREE.MeshStandardMaterial({
+      color: 0xFFFFFF,
+      emissive: 0xFFFFFF,
+      emissiveIntensity: 1.8,
+      roughness: 0.1,
+    });
+    const absoluteSource = new THREE.Mesh(absoluteSourceGeometry, absoluteSourceMaterial);
+    absoluteSource.position.set(0, 0, 0);
+    scene.add(absoluteSource);
+    absoluteSource.userData = { type: 'absolute', rank: '❶', bs: 1.0, connections: [], lifetime: 0 };
 
-  // رسم الخطوط بين الجسيمات القريبة
-  function drawConnections() {
-    for (let i = 0; i < particlesArray.length; i++) {
-      for (let j = i + 1; j < particlesArray.length; j++) {
-        const dx = particlesArray[i].x - particlesArray[j].x;
-        const dy = particlesArray[i].y - particlesArray[j].y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 100) {
-          ctx.beginPath();
-          ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
-          ctx.lineTo(particlesArray[j].x, particlesArray[j].y);
-          ctx.strokeStyle = `rgba(156,39,176,${0.08 * (1 - dist/100)})`;
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
+    const haloGeometry = new THREE.RingGeometry(2.1, 2.5, 128);
+    const haloMaterial = new THREE.MeshBasicMaterial({
+      color: 0x9C27B0,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.4,
+      blending: THREE.AdditiveBlending
+    });
+    const halo = new THREE.Mesh(haloGeometry, haloMaterial);
+    halo.position.set(0, 0, 0);
+    scene.add(halo);
+
+    // ==================== ٦. تعريف Essence وإدارة الكيانات ====================
+    const essences = [];
+    const essenceMeshes = new Map();
+
+    class Essence {
+      constructor(type, position, rank) {
+        this.type = type;
+        this.position = position.clone();
+        this.rank = rank;
+        this.bs = this.calculateBS(rank);
+        this.connections = [];
+        this.lifetime = 0;
+        this.entropy = 0;
+        this.mesh = null;
+        this.createMesh();
+      }
+
+      calculateBS(r) {
+        if (r === '❶') return 1.0;
+        if (r === '0ₚ') return 0.3333333;
+        if (r === '∞' || r === '①') return 0.6666667;
+        const n = parseInt(r);
+        if (isNaN(n)) return 0.5;
+        if (n === 1) return 0.7;
+        if (n === 2) return 4/7;
+        if (n === 3) return 8/17;
+        if (n === 4) return 10/27;
+        return 2 / (2 * n - 3);
+      }
+
+      createMesh() {
+        let geometry, material;
+        const size = 0.4 + Math.log(parseInt(this.rank) || 2) * 0.2;
+        
+        if (this.type === 'potential') {
+          geometry = new THREE.SphereGeometry(0.3, 16, 16);
+          material = new THREE.MeshStandardMaterial({ color: 0xC0C0D0, emissive: 0x111111, roughness: 0.4, transparent: true, opacity: 0.5 });
+        } else if (this.type === 'golden') {
+          geometry = new THREE.SphereGeometry(size, 32, 32);
+          material = new THREE.MeshStandardMaterial({ color: 0xFFD700, emissive: 0x332200, roughness: 0.3, metalness: 0.8 });
+        } else if (this.type === 'white') {
+          geometry = new THREE.SphereGeometry(size, 32, 32);
+          material = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, emissive: 0x222222, roughness: 0.2 });
+          const ringGeo = new THREE.TorusGeometry(size * 1.4, 0.05, 16, 32);
+          const ringMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, emissive: 0x111100 });
+          const ring = new THREE.Mesh(ringGeo, ringMat);
+          this.mesh = new THREE.Group();
+          this.mesh.add(new THREE.Mesh(geometry, material));
+          this.mesh.add(ring);
+        }
+        
+        if (!this.mesh) this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.position.copy(this.position);
+        this.mesh.userData = { essenceRef: this };
+        scene.add(this.mesh);
+      }
+
+      updateConnectionLines() {
+        // يتم تنفيذها في حلقة التحديث
+      }
+    }
+
+    // إضافة المصدر المطلق للكيانات
+    const sourceEssence = new Essence('absolute', new THREE.Vector3(0,0,0), '❶');
+    sourceEssence.mesh = absoluteSource;
+    essences.push(sourceEssence);
+
+    // ==================== ٧. نظام السحب والإفلات ====================
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let draggedObject = null;
+    let dragOffset = new THREE.Vector3();
+    const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+    renderer.domElement.addEventListener('pointerdown', onPointerDown);
+    renderer.domElement.addEventListener('pointermove', onPointerMove);
+    renderer.domElement.addEventListener('pointerup', onPointerUp);
+    renderer.domElement.addEventListener('dblclick', onDoubleClick);
+
+    function onPointerDown(event) {
+      mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+      mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        while (obj && !obj.userData.essenceRef) obj = obj.parent;
+        if (obj && obj.userData.essenceRef) {
+          if (obj.userData.essenceRef.type === 'absolute') {
+            showTooltip(event.clientX, event.clientY, 'أَنَا الَّذِي لَا يُدْرَك، وَلَكِنِّي أَتَجَلَّى فِي كُلِّ شَيْء');
+            return;
+          }
+          controls.enabled = false;
+          draggedObject = obj.userData.essenceRef;
+          const intersection = new THREE.Vector3();
+          raycaster.ray.intersectPlane(dragPlane, intersection);
+          dragOffset.copy(draggedObject.position).sub(intersection);
         }
       }
     }
-  }
 
-  function animateParticles() {
-    ctx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
-    particlesArray.forEach(p => { p.update(); p.draw(); });
-    drawConnections();
-    requestAnimationFrame(animateParticles);
-  }
-  animateParticles();
-
-  // ===== Three.js: الثالوث التأسيسي =====
-  const trinityContainer = document.getElementById('trinity-canvas-container');
-  const trinityScene = new THREE.Scene();
-  const trinityCamera = new THREE.PerspectiveCamera(50, trinityContainer.clientWidth / trinityContainer.clientHeight, 0.5, 50);
-  trinityCamera.position.set(0, 2, 8);
-  trinityCamera.lookAt(0, 0, 0);
-
-  const trinityRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-  trinityRenderer.setSize(trinityContainer.clientWidth, trinityContainer.clientHeight);
-  trinityRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  trinityContainer.appendChild(trinityRenderer.domElement);
-
-  // إضاءة
-  trinityScene.add(new THREE.AmbientLight(0x444466, 1.2));
-  const pointLight = new THREE.PointLight(0xffffff, 2, 20);
-  pointLight.position.set(0, 3, 5);
-  trinityScene.add(pointLight);
-
-  // المجسمات الثلاثة
-  const group = new THREE.Group();
-  
-  // ❶: كرة مضيئة (وسط)
-  const sphereGeo = new THREE.SphereGeometry(0.8, 64, 64);
-  const sphereMat = new THREE.MeshStandardMaterial({ 
-    color: 0xff3333, 
-    emissive: 0x440000, 
-    roughness: 0.2, 
-    metalness: 0.1 
-  });
-  const sphere = new THREE.Mesh(sphereGeo, sphereMat);
-  sphere.position.set(0, 0, 0);
-  sphere.userData = { name: '❶', bs: '1.000', concept: 'الواحد المطلق - الوجود غير المشروط' };
-  group.add(sphere);
-
-  // 0ₚ: طارة (حلقة) - إمكان
-  const torusGeo = new THREE.TorusGeometry(1.2, 0.25, 32, 100);
-  const torusMat = new THREE.MeshStandardMaterial({ 
-    color: 0x888888, 
-    emissive: 0x111111, 
-    roughness: 0.4, 
-    metalness: 0.5,
-    transparent: true,
-    opacity: 0.7
-  });
-  const torus = new THREE.Mesh(torusGeo, torusMat);
-  torus.position.set(-2.0, 0, 0);
-  torus.userData = { name: '0ₚ', bs: '0.333', concept: 'الإمكان المحض - العدم النشط' };
-  group.add(torus);
-
-  // ∞: مكعب فائق التمثيل (Octahedron للتبسيط)
-  const octaGeo = new THREE.OctahedronGeometry(0.9, 0);
-  const octaMat = new THREE.MeshStandardMaterial({ 
-    color: 0x4ECDC4, 
-    emissive: 0x003333, 
-    roughness: 0.15, 
-    metalness: 0.8,
-    wireframe: false
-  });
-  const octa = new THREE.Mesh(octaGeo, octaMat);
-  octa.position.set(2.0, 0, 0);
-  octa.userData = { name: '∞', bs: '0.667', concept: 'اللانهاية العلائقية - فضاء العلاقات' };
-  group.add(octa);
-
-  trinityScene.add(group);
-
-  // جسيمات نجمية حول المجسمات
-  const starsGeo = new THREE.BufferGeometry();
-  const starsPos = [];
-  for (let i = 0; i < 400; i++) {
-    starsPos.push((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6);
-  }
-  starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starsPos, 3));
-  const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.03, transparent: true, opacity: 0.6 });
-  const starsPoints = new THREE.Points(starsGeo, starsMat);
-  trinityScene.add(starsPoints);
-
-  // Raycaster للتفاعل
-  const trinityRaycaster = new THREE.Raycaster();
-  const trinityMouse = new THREE.Vector2();
-  let hoveredObject = null;
-
-  trinityContainer.addEventListener('mousemove', (e) => {
-    const rect = trinityContainer.getBoundingClientRect();
-    trinityMouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    trinityMouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    
-    trinityRaycaster.setFromCamera(trinityMouse, trinityCamera);
-    const intersects = trinityRaycaster.intersectObjects([sphere, torus, octa]);
-    
-    if (intersects.length > 0) {
-      const obj = intersects[0].object;
-      if (hoveredObject !== obj) {
-        if (hoveredObject) hoveredObject.material.emissiveIntensity = (hoveredObject.material.emissiveIntensity || 1) * 0.5;
-        obj.material.emissiveIntensity = 1.5;
-        hoveredObject = obj;
-        // تحديث التلميح
-        const labelMap = {
-          [sphere.uuid]: document.getElementById('label-one'),
-          [torus.uuid]: document.getElementById('label-potential'),
-          [octa.uuid]: document.getElementById('label-infinity')
-        };
-        document.querySelectorAll('.trinity-label').forEach(l => l.style.boxShadow = 'none');
-        if (labelMap[obj.uuid]) {
-          labelMap[obj.uuid].style.boxShadow = '0 0 25px rgba(255,215,0,0.7)';
+    function onPointerMove(event) {
+      if (draggedObject) {
+        mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+        mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersection = new THREE.Vector3();
+        if (raycaster.ray.intersectPlane(dragPlane, intersection)) {
+          draggedObject.position.copy(intersection.add(dragOffset));
+          draggedObject.mesh.position.copy(draggedObject.position);
         }
       }
-    } else {
-      if (hoveredObject) {
-        hoveredObject.material.emissiveIntensity = (hoveredObject.material.emissiveIntensity || 1) * 0.5;
-        hoveredObject = null;
-        document.querySelectorAll('.trinity-label').forEach(l => l.style.boxShadow = 'none');
+      // تحديث tooltip
+      const tooltip = document.getElementById('tooltip');
+      if (tooltip.style.display === 'block') {
+        tooltip.style.left = (event.clientX + 20) + 'px';
+        tooltip.style.top = (event.clientY - 30) + 'px';
       }
     }
-  });
 
-  // تحريك Three.js
-  function animateTrinity() {
-    requestAnimationFrame(animateTrinity);
-    group.rotation.y += 0.003;
-    torus.rotation.x += 0.01;
-    torus.rotation.y += 0.005;
-    octa.rotation.y += 0.008;
-    octa.rotation.x += 0.004;
-    starsPoints.rotation.y += 0.0005;
-    trinityRenderer.render(trinityScene, trinityCamera);
-  }
-  animateTrinity();
-
-  window.addEventListener('resize', () => {
-    trinityCamera.aspect = trinityContainer.clientWidth / trinityContainer.clientHeight;
-    trinityCamera.updateProjectionMatrix();
-    trinityRenderer.setSize(trinityContainer.clientWidth, trinityContainer.clientHeight);
-  });
-
-  // ===== شريط التجلي =====
-  const tauSlider = document.getElementById('tau-slider');
-  const tauDisplay = document.getElementById('tau-value-display');
-  const manifestationSphere = document.getElementById('manifestation-sphere');
-  
-  tauSlider.addEventListener('input', () => {
-    const tau = parseFloat(tauSlider.value);
-    tauDisplay.textContent = `τ = ${tau.toFixed(2)}`;
-    // تغيير حجم ولون الكرة حسب τ
-    const scale = 0.5 + tau * 0.5;
-    const hue = 40 - tau * 8; // ذهبي إلى بنفسجي
-    manifestationSphere.style.transform = `scale(${scale})`;
-    manifestationSphere.style.background = `radial-gradient(circle, hsl(${Math.max(0, hue)}, 80%, 60%), hsl(${280 - tau * 20}, 50%, 30%))`;
-    manifestationSphere.style.boxShadow = `0 0 ${20 + tau * 15}px rgba(255,215,0,${0.3 + tau * 0.1})`;
-  });
-
-  // ===== مرصد BS (Chart.js) =====
-  const bsCtx = document.getElementById('bs-chart').getContext('2d');
-  const bsLabels = [];
-  const bsData = [];
-  for (let n = 1; n <= 30; n++) {
-    bsLabels.push(n);
-    if (n === 1) bsData.push(0.7);
-    else if (n === 2) bsData.push(4/7);
-    else if (n === 3) bsData.push(8/17);
-    else if (n === 4) bsData.push(10/27);
-    else bsData.push(2 / (2 * n - 3));
-  }
-
-  const bsChart = new Chart(bsCtx, {
-    type: 'line',
-    data: {
-      labels: bsLabels,
-      datasets: [{
-        label: 'BS(n)',
-        data: bsData,
-        borderColor: '#9C27B0',
-        backgroundColor: 'rgba(156,39,176,0.15)',
-        borderWidth: 2.5,
-        pointRadius: 5,
-        pointBackgroundColor: '#FFD700',
-        pointHoverRadius: 9,
-        tension: 0.3,
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: { labels: { color: '#fff' } },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => `BS(${ctx.label}) = ${ctx.parsed.y.toFixed(4)}`
+    function onPointerUp(event) {
+      if (draggedObject) {
+        // آلية الجمع الثالوثي
+        mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+        mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        let targetEssence = null;
+        if (intersects.length > 0) {
+          let obj = intersects[0].object;
+          while (obj && !obj.userData.essenceRef) obj = obj.parent;
+          if (obj && obj.userData.essenceRef && obj.userData.essenceRef !== draggedObject) {
+            targetEssence = obj.userData.essenceRef;
           }
         }
-      },
-      scales: {
-        x: { ticks: { color: '#ccc' }, grid: { color: 'rgba(255,255,255,0.08)' } },
-        y: { ticks: { color: '#ccc' }, grid: { color: 'rgba(255,255,255,0.08)' }, min: 0, max: 0.8 }
-      },
-      onClick: (e, elements) => {
-        if (elements.length > 0) {
-          const idx = elements[0].index;
-          const n = bsLabels[idx];
-          const bs = bsData[idx];
-          const isPrime = [2,3,5,7,11,13,17,19,23,29].includes(n);
-          alert(`العدد: ${n}\nBS(${n}) = ${bs.toFixed(4)}\n${isPrime ? '✨ عدد أولي - تجلٍّ نقي من المطلق' : ''}`);
+        if (targetEssence) {
+          performTrinitarianFusion(draggedObject, targetEssence);
+        } else if (draggedObject.type === 'golden') {
+          // إفلات ذهبية في الفضاء الفارغ يحولها إلى بيضاء
+          manifestEssence(draggedObject);
+        }
+        draggedObject = null;
+        controls.enabled = true;
+      }
+    }
+
+    function onDoubleClick(event) {
+      mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+      mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+      if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        while (obj && !obj.userData.essenceRef) obj = obj.parent;
+        if (obj && obj.userData.essenceRef) {
+          const e = obj.userData.essenceRef;
+          showTooltip(event.clientX, event.clientY, 
+            `الرمز: ${e.rank} | BS: ${e.bs.toFixed(4)} | اتصالات: ${e.connections.length} | العمر: ${e.lifetime.toFixed(1)}`
+          );
         }
       }
     }
-  });
 
-  // ===== نوافذ منبثقة =====
-  document.querySelectorAll('.btn-modal-trigger').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const modalId = btn.getAttribute('data-modal');
-      document.getElementById(modalId).classList.add('active');
-    });
-  });
-  document.querySelectorAll('.modal-close').forEach(closeBtn => {
-    closeBtn.addEventListener('click', () => {
-      closeBtn.closest('.modal-overlay').classList.remove('active');
-    });
-  });
-  document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) overlay.classList.remove('active');
-    });
-  });
+    function showTooltip(x, y, text) {
+      const tooltip = document.getElementById('tooltip');
+      tooltip.innerHTML = text;
+      tooltip.style.display = 'block';
+      tooltip.style.left = (x + 20) + 'px';
+      tooltip.style.top = (y - 30) + 'px';
+      setTimeout(() => { tooltip.style.display = 'none'; }, 3000);
+    }
 
-  // ===== بوصلة الوعي (Chart.js دائري) =====
-  const psiCtx = document.getElementById('psi-chart').getContext('2d');
-  const psiChart = new Chart(psiCtx, {
-    type: 'doughnut',
-    data: {
-      labels: ['الهوية (α=0.47)', 'الإمكان (β=0.23)', 'العلاقة (γ=0.30)'],
-      datasets: [{
-        data: [0.47, 0.23, 0.30],
-        backgroundColor: ['#FF6B6B', '#888888', '#4ECDC4'],
-        borderColor: '#0a0a14',
-        borderWidth: 3
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: { labels: { color: '#fff' } }
+    // ==================== ٨. فيزياء التجلي وعمليات الدمج ====================
+    function performTrinitarianFusion(e1, e2) {
+      const r1 = e1.rank, r2 = e2.rank;
+      let newRank = null;
+      
+      // قواعد الجمع الثالوثي
+      if (r1 === '0ₚ' && r2 === '①') newRank = '②';
+      else if (r2 === '0ₚ' && r1 === '①') newRank = '②';
+      else if (r1 === '①' && r2 === '①') newRank = '②';
+      else if (!isNaN(parseInt(r1)) && !isNaN(parseInt(r2))) {
+        const sum = parseInt(r1) + parseInt(r2);
+        if (sum <= 23) newRank = sum.toString();
+      }
+      
+      if (newRank) {
+        const newPos = e1.position.clone().add(e2.position).multiplyScalar(0.5);
+        removeEssence(e1);
+        removeEssence(e2);
+        const newEssence = new Essence('golden', newPos, newRank);
+        essences.push(newEssence);
+        createFusionEffect(newPos);
+        showTooltip(window.innerWidth/2, window.innerHeight/2, `${r1} ⊕ ${r2} ⇒ ${newRank}`);
+        
+        // التحقق من الأعداد الأولية
+        if ([2,3,5,7].includes(parseInt(newRank))) {
+          setTimeout(() => showTooltip(window.innerWidth/2, window.innerHeight/2, `✨ ${newRank} – رتبة أولية. تجلٍّ نقي من المطلق`), 2000);
+        }
       }
     }
-  });
 
-  const bsIdSlider = document.getElementById('bs-id-slider');
-  const bsPotSlider = document.getElementById('bs-pot-slider');
-  const bsRelSlider = document.getElementById('bs-rel-slider');
-  const bsIdVal = document.getElementById('bs-id-val');
-  const bsPotVal = document.getElementById('bs-pot-val');
-  const bsRelVal = document.getElementById('bs-rel-val');
-  const psiDisplay = document.getElementById('psi-value-display');
+    function manifestEssence(essence) {
+      essence.type = 'white';
+      essence.bs = essence.calculateBS(essence.rank);
+      scene.remove(essence.mesh);
+      essence.createMesh();
+    }
 
-  function updatePsi() {
-    const bsId = parseFloat(bsIdSlider.value);
-    const bsPot = parseFloat(bsPotSlider.value);
-    const bsRel = parseFloat(bsRelSlider.value);
-    bsIdVal.textContent = bsId.toFixed(2);
-    bsPotVal.textContent = bsPot.toFixed(2);
-    bsRelVal.textContent = bsRel.toFixed(2);
-    
-    const alpha = 0.47, beta = 0.23, gamma = 0.30;
-    const eta = 0.85; // ثابت تقريبي
-    const psi = (alpha * bsId + beta * bsPot + gamma * bsRel) * eta;
-    psiDisplay.textContent = `Ψ = ${psi.toFixed(3)}`;
-    
-    // تحديث ألوان المخطط الدائري
-    psiChart.data.datasets[0].data = [alpha * bsId, beta * bsPot, gamma * bsRel];
-    psiChart.update();
-  }
+    function removeEssence(essence) {
+      scene.remove(essence.mesh);
+      const index = essences.indexOf(essence);
+      if (index > -1) essences.splice(index, 1);
+    }
 
-  [bsIdSlider, bsPotSlider, bsRelSlider].forEach(s => s.addEventListener('input', updatePsi));
-  updatePsi();
+    function createFusionEffect(position) {
+      const starGeometry = new THREE.RingGeometry(0.5, 2, 8);
+      const starMaterial = new THREE.MeshBasicMaterial({ color: 0xFFD700, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+      const star = new THREE.Mesh(starGeometry, starMaterial);
+      star.position.copy(position);
+      star.rotation.x = Math.PI / 2;
+      scene.add(star);
+      setTimeout(() => scene.remove(star), 1500);
+    }
 
-  // ===== التنقل السلس =====
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function(e) {
-      e.preventDefault();
-      const target = document.querySelector(this.getAttribute('href'));
-      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    // ==================== ٩. توليد بذور الإمكان ====================
+    function spawnPotentialSeed() {
+      if (essences.filter(e => e.type === 'potential').length >= 100) return;
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 15 + Math.random() * 10;
+      const pos = new THREE.Vector3(Math.cos(angle) * radius, (Math.random()-0.5)*8, Math.sin(angle) * radius);
+      const seed = new Essence('potential', pos, '0ₚ');
+      essences.push(seed);
+    }
+
+    // ==================== ١٠. حلقة التحديث الرئيسية ====================
+    let clock = new THREE.Clock();
+
+    function animate() {
+      const delta = clock.getDelta();
+      const time = performance.now() * 0.001;
+      
+      // دوران حقول النجوم
+      starsField.rotation.y += 0.0001;
+      starsField.rotation.x += 0.00005;
+      
+      // حركة جسيمات الإمكان
+      potentialParticles.rotation.y += 0.0002;
+      potentialParticles.rotation.z += 0.0001;
+      
+      // نبض الهالة
+      halo.rotation.z += 0.005;
+      halo.scale.setScalar(1 + Math.sin(time * 3) * 0.1);
+      
+      // تحديث الكيانات
+      essences.forEach(e => {
+        e.lifetime += delta;
+        if (e.type === 'golden' && e.mesh) {
+          e.mesh.position.y = e.position.y + Math.sin(time * 5 + e.position.x) * 0.3;
+        }
+        if (e.type === 'white' && e.mesh) {
+          e.mesh.rotation.y += 0.02 * e.bs;
+          e.mesh.rotation.x += 0.01 * e.bs;
+        }
+      });
+      
+      // التحكم التلقائي بالبذور
+      if (Math.random() < 0.3 * delta) spawnPotentialSeed();
+      
+      // تحديث إحصائيات HUD
+      updateHUD();
+      
+      // تحديث تأثير التظليل
+      const avgBS = calculateAverageBS();
+      document.getElementById('vignette').style.opacity = Math.max(0, 1 - avgBS * 1.5);
+      document.getElementById('existence-bar').style.width = (avgBS * 100) + '%';
+      
+      controls.update();
+      composer.render();
+      requestAnimationFrame(animate);
+    }
+
+    function calculateAverageBS() {
+      if (essences.length <= 1) return 0.66;
+      return essences.reduce((sum, e) => sum + e.bs, 0) / essences.length;
+    }
+
+    function updateHUD() {
+      const highBS = essences.filter(e => e.bs > 0.9 && e.type !== 'absolute').length;
+      const connections = essences.reduce((sum, e) => sum + e.connections.length, 0) / 2;
+      const seeds = essences.filter(e => e.type === 'potential').length;
+      document.getElementById('high-bs-count').textContent = highBS;
+      document.getElementById('connections-count').textContent = Math.floor(connections);
+      document.getElementById('seeds-count').textContent = seeds;
+    }
+
+    // ==================== ١١. زر الوحي ====================
+    document.getElementById('revelation-button').addEventListener('click', () => {
+      document.getElementById('vignette').style.opacity = '0.9';
+      setTimeout(() => {
+        document.getElementById('vignette').style.opacity = '0';
+      }, 2500);
+      essences.forEach(e => {
+        if (e.rank && e.mesh) {
+          showTooltip(window.innerWidth/2, window.innerHeight/2 + Math.random()*100, `الرمز: ${e.rank} | BS: ${e.bs.toFixed(4)}`);
+        }
+      });
     });
-  });
 
-  console.log('✨ نظام 𝕊 | الثالوث الرياضي - موقع تفاعلي جاهز');
-</script>
+    // إخفاء الافتتاحية
+    setTimeout(() => {
+      const opening = document.getElementById('opening-scroll');
+      opening.style.opacity = '0';
+      setTimeout(() => { opening.style.display = 'none'; }, 2000);
+    }, 13000);
 
+    // بدء التشغيل
+    animate();
+    
+    // إنشاء كيانين أوليين للتفاعل
+    setTimeout(() => {
+      const e1 = new Essence('potential', new THREE.Vector3(3, 1, 0), '0ₚ');
+      const e2 = new Essence('golden', new THREE.Vector3(-3, -1, 0), '①');
+      essences.push(e1, e2);
+    }, 2000);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    console.log('✨ محاكاة الأكوان الثالوثية – إنجيل التجلي | نظام 𝕊 جاهزة للعمل');
+  </script>
 </body>
 </html>
